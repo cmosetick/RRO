@@ -2,7 +2,7 @@
 #  Part of the R package, http://www.R-project.org
 #
 #  Copyright (C) 1999-1999 Saikat DebRoy, Douglas M. Bates, Jose C. Pinheiro
-#  Copyright (C) 2000-2013 The R Core Team
+#  Copyright (C) 2000-2014 The R Core Team
 #
 #  This program is free software; you can redistribute it and/or modify
 #  it under the terms of the GNU General Public License as published by
@@ -119,11 +119,8 @@ nlsModel.plinear <- function(form, data, start, wts)
         dtdot <- function(A, b) apply(A, MARGIN = c(2L,3L), FUN = "%*%", b)
     }
 
-    getPars.noVarying <- function()
-        unlist(setNames(lapply(names(ind), get, envir = env), names(ind)))
-    getPars.varying <- function()
-        unlist(setNames(lapply(names(ind), get, envir = env),
-                        names(ind)))[useParams]
+    getPars.noVarying <- function() unlist(mget(names(ind), env))
+    getPars.varying   <- function() unlist(mget(names(ind), env))[useParams]
     getPars <- getPars.noVarying
 
     internalPars <- getPars()
@@ -235,8 +232,7 @@ nlsModel <- function(form, data, start, wts, upper=NULL)
         ind[[i]] <- parLength + seq_along(start[[i]])
         parLength <- parLength + length(start[[i]])
     }
-    getPars.noVarying <- function()
-        unlist(setNames(lapply(names(ind), get, envir = env), names(ind)))
+    getPars.noVarying <- function() unlist(mget(names(ind), env))
     getPars <- getPars.noVarying
     internalPars <- getPars()
 
@@ -296,9 +292,7 @@ nlsModel <- function(form, data, start, wts, upper=NULL)
     if(QR$rank < qrDim)
         stop("singular gradient matrix at initial parameter estimates")
 
-    getPars.varying <- function()
-        unlist(setNames(lapply(names(ind), get, envir = env),
-                        names(ind)))[useParams]
+    getPars.varying <- function() unlist(mget(names(ind), env))[useParams]
     setPars.noVarying <- function(newPars)
     {
         assign("internalPars", newPars, envir = thisEnv)

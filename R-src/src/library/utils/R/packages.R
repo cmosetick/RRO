@@ -1,7 +1,7 @@
 #  File src/library/utils/R/packages.R
 #  Part of the R package, http://www.R-project.org
 #
-#  Copyright (C) 1995-2014 The R Core Team
+#  Copyright (C) 1995-2015 The R Core Team
 #
 #  This program is free software; you can redistribute it and/or modify
 #  it under the terms of the GNU General Public License as published by
@@ -328,6 +328,10 @@ update.packages <- function(lib.loc = NULL, repos = getOption("repos"),
     if(is.null(lib.loc))
         lib.loc <- .libPaths()
 
+
+    if(type == "both" && (!missing(contriburl) || !is.null(available))) {
+        stop("specifying 'contriburl' or 'available' requires a single type, not type = \"both\"")
+    }
     if(is.null(available))
         available <- available.packages(contriburl = contriburl,
                                         method = method)
@@ -385,9 +389,14 @@ update.packages <- function(lib.loc = NULL, repos = getOption("repos"),
         ## do this a library at a time, to handle dependencies correctly.
         libs <- unique(instlib)
         for(l in libs)
-            install.packages(update[instlib == l , "Package"], l,
-                             contriburl = contriburl, method = method,
-                             available = available, ..., type = type)
+            if (type == 'both')
+                install.packages(update[instlib == l , "Package"], l,
+                                 repos = repos, method = method,
+                                 ..., type = type)
+            else
+                install.packages(update[instlib == l , "Package"], l,
+                                 contriburl = contriburl, method = method,
+                                 available = available, ..., type = type)
     }
 }
 
@@ -452,6 +461,9 @@ new.packages <- function(lib.loc = NULL, repos = getOption("repos"),
                          ..., type = getOption("pkgType"))
 {
     ask  # just a check that it is valid before we start work
+    if(type == "both" && (!missing(contriburl) || !is.null(available))) {
+        stop("specifying 'contriburl' or 'available' requires a single type, not type = \"both\"")
+    }
     if(is.null(lib.loc)) lib.loc <- .libPaths()
     if(!is.matrix(instPkgs))
         stop(gettextf("no installed packages for (invalid?) 'lib.loc=%s'",
@@ -482,9 +494,13 @@ new.packages <- function(lib.loc = NULL, repos = getOption("repos"),
         else message("no new packages are available")
     }
     if(length(update)) {
-        install.packages(update, lib = lib.loc[1L], contriburl = contriburl,
-                         method = method, available = available,
-                         type = type, ...)
+        if(type == "both")
+            install.packages(update, lib = lib.loc[1L], method = method,
+                             type = type, ...)
+        else
+            install.packages(update, lib = lib.loc[1L], contriburl = contriburl,
+                             method = method, available = available,
+                             type = type, ...)
         # Now check if they were installed and update 'res'
         dirs <- list.files(lib.loc[1L])
         updated <- update[update %in% dirs]
@@ -572,7 +588,7 @@ installed.packages <-
             enc <- sprintf("%d_%s", nchar(base), .Call(C_crc64, base))
             dest <- file.path(tempdir(), paste0("libloc_", enc, ".rds"))
             if(file.exists(dest) &&
-               file.info(dest)$mtime > file.info(lib)$mtime &&
+               file.mtime(dest) > file.mtime(lib) &&
                (val <- readRDS(dest))$base == base)
                 ## use the cache file
                 retval <- rbind(retval, val$value)
@@ -652,10 +668,8 @@ download.packages <- function(pkgs, destdir, available = NULL,
                               contriburl = contrib.url(repos, type),
                               method, type = getOption("pkgType"), ...)
 {
-    dirTest <- function(x) !is.na(isdir <- file.info(x)$isdir) & isdir
-
     nonlocalcran <- length(grep("^file:", contriburl)) < length(contriburl)
-    if(nonlocalcran && !dirTest(destdir))
+    if(nonlocalcran && !dir.exists(destdir))
         stop("'destdir' is not a directory")
     if(is.null(available))
         available <- available.packages(contriburl=contriburl, method=method)
@@ -727,6 +741,7 @@ contrib.url <- function(repos, type = getOption("pkgType"))
 {
     ## Not entirely clear this is optimal
     if(type == "both") type <- "source"
+    if(type == "binary") type <- .Platform$pkgType
     if(is.null(repos)) return(NULL)
     if("@CRAN@" %in% repos && interactive()) {
         cat(gettext("--- Please select a CRAN mirror for use in this session ---"),
@@ -762,15 +777,16 @@ getCRANmirrors <- function(all = FALSE, local.only = FALSE)
 {
     m <- NULL
     if(!local.only) {
-        ## try to handle explicitly failure to connect to CRAN.
+        ## Try to handle explicitly failure to connect to CRAN.
         con <- url("http://cran.r-project.org/CRAN_mirrors.csv")
         m <- try(open(con, "r"), silent = TRUE)
-        if(!inherits(m, "try-error")) m <- try(read.csv(con, as.is = TRUE))
+        if(!inherits(m, "try-error"))
+            m <- try(read.csv(con, as.is = TRUE, encoding = "UTF-8"))
         close(con)
     }
     if(is.null(m) || inherits(m, "try-error"))
         m <- read.csv(file.path(R.home("doc"), "CRAN_mirrors.csv"),
-                      as.is = TRUE)
+                      as.is = TRUE, encoding = "UTF-8")
     if(!all) m <- m[as.logical(m$OK), ]
     m
 }
@@ -796,12 +812,13 @@ chooseBioCmirror <- function(graphics = getOption("menu.graphics"), ind = NULL)
 {
     if(is.null(ind) && !interactive())
         stop("cannot choose a BioC mirror non-interactively")
-    m <- c("Seattle (USA)"="http://www.bioconductor.org"
+    m <- c("Bioconductor (World-wide)"="http://bioconductor.org"
 	   , "Bethesda (USA)"="http://watson.nci.nih.gov/bioc_mirror"
 	   , "Dortmund (Germany)"="http://bioconductor.statistik.tu-dortmund.de"
 	   , "Anhui (China)"="http://mirrors.ustc.edu.cn/bioc/"
 	   , "Cambridge (UK)"="http://mirrors.ebi.ac.uk/bioconductor/"
 	   , "Riken, Kobe (Japan)" = "http://bioconductor.jp/"
+	   , "Tokyo (Japan)" = "http://bioc.ism.ac.jp/"
 	   , "Canberra (Australia)" = "http://mirror.aarnet.edu.au/pub/bioconductor/"
 	   , "Sao Paulo (Brazil)" = "http://bioconductor.fmrp.usp.br/"
 	   )
@@ -822,7 +839,8 @@ setRepositories <-
         p <- file.path(R.home("etc"), "repositories")
     a <- tools:::.read_repositories(p)
     pkgType <- getOption("pkgType")
-    if (pkgType == "both") pkgType <- .Platform$pkgType
+    if (pkgType == "both") pkgType <- "source" #.Platform$pkgType
+    if (pkgType == "binary") pkgType <- .Platform$pkgType
     if(length(grep("^mac\\.binary", pkgType))) pkgType <- "mac.binary"
     thisType <- a[[pkgType]]
     a <- a[thisType, 1L:3L]

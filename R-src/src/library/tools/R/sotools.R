@@ -41,7 +41,7 @@ read_symbols_from_object_file <- function(f)
     ## reasonable to assume this on the path
     if(!nzchar(nm <- Sys.which("nm"))) return()
     f <- file_path_as_absolute(f)
-    if(!(file.info(f)$size)) return()
+    if(!(file.size(f))) return()
     s <- strsplit(system(sprintf("%s -Pg %s", shQuote(nm), shQuote(f)),
                          intern = TRUE),
                   " +")
@@ -103,6 +103,7 @@ so_symbol_names_table <-
       "linux, Fortran, gfortran, print, _gfortran_st_write",
       "linux, Fortran, gfortran, stop, _gfortran_stop_numeric_f08",
       "linux, Fortran, gfortran, stop, _gfortran_stop_string",
+      "linux, Fortran, gfortran, rand, _gfortran_rand",
 
       "osx, C, gcc, abort, _abort",
       "osx, C, gcc, assert, ___assert_rtn",
@@ -131,6 +132,7 @@ so_symbol_names_table <-
       "osx, Fortran, gfortran, print, __gfortran_st_write",
       "osx, Fortran, gfortran, stop, __gfortran_stop_numeric",
       "osx, Fortran, gfortran, stop, __gfortran_stop_string",
+      "osx, Fortran, gfortran, rand, __gfortran_rand",
 
       "freebsd, C, gcc, abort, abort",
       "freebsd, C, gcc, assert, __assert",
@@ -155,6 +157,7 @@ so_symbol_names_table <-
       "freebsd, Fortran, gfortran, print, _gfortran_st_write",
       "freebsd, Fortran, gfortran, stop, _gfortran_stop_numeric_f08",
       "freebsd, Fortran, gfortran, stop, _gfortran_stop_string",
+      "freebsd, Fortran, gfortran, rand, _gfortran_rand",
 
       ## stdout, stderr do not show up on Solaris
       "solaris, C, solcc, abort, abort",
@@ -183,6 +186,7 @@ so_symbol_names_table <-
       "solaris, Fortran, solf95, stop, __f90_stop_int",
       "solaris, Fortran, solf95, stop, __f90_stop_char",
       "solaris, Fortran, solf95, runtime, abort",
+      "solaris, Fortran, solf95, rand, rand_",
 
       ## Windows statically links libstdc++, libgfortran
       ## only in .o, positions hard-coded in check_so_symbols
@@ -208,7 +212,9 @@ so_symbol_names_table <-
       "windows, C, gcc, rand_r, rand_r",
       "windows, C, gcc, srand, srand",
       "windows, C, gcc, srand48, srand48",
-      "windows, Fortran, gfortran, stop, exit"
+      "windows, Fortran, gfortran, stop, exit",
+      ## next will not show up with static libgfortran
+      "windows, Fortran, gfortran, rand, _gfortran_rand"
       )
 so_symbol_names_table <-
     do.call(rbind,
@@ -415,6 +421,7 @@ format.check_so_symbols <-
 function(x, ...)
 {
     if(!length(x)) return(character())
+    ## <FIXME split.matrix>
     entries <- split.data.frame(x, x[, "osname"])
     objects <- vector("list", length(entries))
     names(objects) <- names(entries)

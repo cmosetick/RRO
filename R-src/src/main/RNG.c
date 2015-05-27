@@ -1,7 +1,7 @@
 /*
  *  R : A Computer Language for Statistical Data Analysis
  *  Copyright (C) 1995, 1996  Robert Gentleman and Ross Ihaka
- *  Copyright (C) 1997--2013  The R Core Team
+ *  Copyright (C) 1997--2015  The R Core Team
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -42,9 +42,10 @@ UnifInitFun User_unif_init = NULL; /* some picky compilers */
 
 DL_FUNC  User_norm_fun = NULL; /* also in ../nmath/snorm.c */
 
-
+#include "nmath2.h"
 static RNGtype RNG_kind = RNG_DEFAULT;
-extern N01type N01_kind; /* from ../nmath/snorm.c */
+//extern N01type N01_kind; /* from ../nmath/snorm.c */
+//extern double BM_norm_keep; /* ../nmath/snorm.c */
 
 /* typedef unsigned int Int32; in Random.h */
 
@@ -261,8 +262,6 @@ static void FixupSeeds(RNGtype RNG_kind, int initial)
     }
 }
 
-extern double BM_norm_keep; /* ../nmath/snorm.c */
-
 static void RNG_Init(RNGtype kind, Int32 seed)
 {
     int j;
@@ -331,8 +330,6 @@ static SEXP GetSeedsFromVar(void)
 	seeds = eval(R_SeedsSymbol, R_GlobalEnv);
     return seeds;
 }
-
-unsigned int TimeToSeed(void); // times.c
 
 static void Randomize(RNGtype kind)
 {
@@ -674,7 +671,10 @@ static double MT_genrand(void)
 */
 
 
+/* This define may give a warning in clang, but is needed to comply
+   with the prohibition on changing the code. */
 #define long Int32
+
 #define ran_arr_buf       R_KT_ran_arr_buf
 #define ran_arr_cycle     R_KT_ran_arr_cycle
 #define ran_arr_ptr       R_KT_ran_arr_ptr
