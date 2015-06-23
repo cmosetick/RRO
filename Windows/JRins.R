@@ -32,7 +32,7 @@
     SVN <- sub("Revision: ", "", readLines("../../../SVN-REVISION"))[1L]
     SVN <- as.character(as.numeric(SVN) - 50000L)
     Rver0 <- paste(sub(" .*$", "", Rver), SVN, sep = ".")
-    Rver <- "8.0.2-Beta"
+    Rver <- "3.2.1"
 
 
     con <- file("R.iss", "w")
@@ -92,21 +92,21 @@
     writeLines(lines, con)
 
     writeLines(c("", "", "[Files]"), con)
-    cat('Source: "R-3.1.2\\etc\\checkpoint.R', '"; ',
+    cat('Source: "R-devel\\etc\\checkpoint.R', '"; ',
             'DestDir: "{app}\\etc', '"; ',
             'Flags: ignoreversion; ',
             'Components: main', 
             file = con, sep = "")
     cat("\n", file = con)
 
-    cat('Source: "R-3.1.2\\etc\\README.txt', '"; ',
+    cat('Source: "R-devel\\etc\\README.txt', '"; ',
             'DestDir: "{app}', '"; ',
             'Flags: ignoreversion; ',
             'Components: main', 
             file = con, sep = "")
     cat("\n", file = con)
 
-    cat('Source: "R-3.1.2\\etc\\COPYING', '"; ',
+    cat('Source: "R-devel\\etc\\COPYING', '"; ',
             'DestDir: "{app}', '"; ',
             'Flags: ignoreversion; ',
             'Components: main', 

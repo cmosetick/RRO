@@ -1,13 +1,40 @@
-Revo.version <- structure(list(major = "8", minor = "0.2-beta"), class = "simple.list")
-options(repos = c(CRAN = "http://mran.revolutionanalytics.com/snapshot/2015-03-01"))
+Revo.version <- structure(list(major = "3", minor = "2.1", "build id" = BUILD_ID), class = "simple.list")
+options(repos = c(CRAN = "http://mran.revolutionanalytics.com/snapshot/2015-06-15"))
 if (.Platform$OS.type == "windows" ) {
  options(help_type="html")
 }
 quiet <- any(match(c("-q", "--silent", "--quiet", "--slave"), commandArgs()), na.rm=TRUE)
 	if (!quiet){
-                cat("Revolution R Open 8.0.2 beta\n",sep="")
+                cat("Revolution R Open 3.2.1\n",sep="")
+                cat("Default CRAN mirror snapshot taken on 2015-06-15\n",sep="")
                 cat("The enhanced R distribution from Revolution Analytics\n",sep="")
                 cat("Visit mran.revolutionanalytics.com/open for information\n",sep="")
-                cat("about additional features and technical support options.\n\n",sep="")
+                cat("about additional features.\n\n",sep="")
 
 	}
+
+load_if_installed <- function(package) {
+  if (!identical(system.file(package="RevoUtilsMath"), "")) {
+    do.call('library', list(package))
+    return(TRUE)
+  } else
+    return(FALSE)
+}
+
+if(Sys.info()["sysname"] == "Darwin"){
+  local({
+    hw.ncpu <- system('sysctl hw.ncpu', intern = TRUE)
+    ncores <- sub("hw.ncpu: ", "", hw.ncpu)
+    msg <- "Multithreaded BLAS/LAPACK libraries detected. Using %s cores for math algorithms."
+    message(sprintf(msg, ncores))
+    invisible(NULL)
+  })
+} else if(load_if_installed("RevoUtilsMath")){
+  local({
+    ncores <- RevoUtilsMath::getMKLthreads()
+    msg <- "Multithreaded BLAS/LAPACK libraries detected. Using %d cores for math algorithms."
+    message(sprintf(msg, ncores))
+    invisible(NULL)
+  })
+}
+
